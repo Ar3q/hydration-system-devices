@@ -7,7 +7,7 @@ const char* ssid = "***";
 const char* password = "***";
 
 const char* mqtt_server = "xxx.xxx.xxx.xxx";
-const int mqtt_port = xxxx;
+const int mqtt_port = 1;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -65,112 +65,116 @@ void callback(char* topic, byte* message, unsigned int length) {
   Serial.println();
 
   String firstTopicElement = getElementOfTopic(topicStr, 0);
-  String secondTopicElement = getElementOfTopic(topicStr, 1);
 
   Serial.print("1st: ");
   Serial.println(firstTopicElement);
-  Serial.print("2nd: ");
-  Serial.println(secondTopicElement);
+  //  Serial.print("2nd: ");
+  //  Serial.println(secondTopicElement);
 
-  if (firstTopicElement == "pomps_device") {
-    int pompPin = -1;
 
-    if (secondTopicElement == "pomp1") {
-      pompPin = ena;
-    } else if (secondTopicElement == "pomp2") {
-      pompPin = enb;
-    }
+  if (firstTopicElement == "devices") {
+    String secondTopicElement = getElementOfTopic(topicStr, 1);
+    String thirdTopicElement = getElementOfTopic(topicStr, 2);
 
-    else if (secondTopicElement == "moistureThreshold") {
-      int moistureThresholdIndex = -1;
+    if (secondTopicElement == "pomps_device") {
+      int pompPin = -1;
+
+      // devices/pomps_device/(pomp1 || pomp2)
+      if (thirdTopicElement == "pomp1") {
+        pompPin = ena;
+      } else if (thirdTopicElement == "pomp2") {
+        pompPin = enb;
+      }
+
+      // devices/pomps_device/moisture_threshold/(moisture_device_1 || moisture_device_2)
+      else if (thirdTopicElement == "moisture_threshold") {
+        int moistureThresholdIndex = -1;
+        String fourthTopicElement = getElementOfTopic(topicStr, 3);
+
+        Serial.print("4th: ");
+        Serial.println(fourthTopicElement);
+
+        if (fourthTopicElement == "moisture_device_1") {
+          moistureThresholdIndex = 0;
+        } else if (fourthTopicElement == "moisture_device_2") {
+          moistureThresholdIndex = 1;
+        }
+
+
+        /*
+           threshold could be set to 0,
+           toInt() would return 0 also when string doesn't start with '0', eg. 'a'
+           so additional checking and setting to -1
+        */
+        int threshold = messageTemp.toInt();
+        Serial.println("threshold: ");
+        Serial.println(threshold);
+        if (!threshold && messageTemp[0] != '0') {
+          threshold = -1;
+        }
+
+        Serial.println("threshold: ");
+        Serial.println(threshold);
+
+        if (threshold >= 0) {
+          moistureThreshold[moistureThresholdIndex] = threshold;
+        } else {
+          Serial.println("Not valid value");
+          return;
+        }
+
+        Serial.println("moisture th: ");
+        Serial.println(moistureThreshold[0]);
+        Serial.println(moistureThreshold[1]);
+      }
+
+      else {
+        Serial.println("Unknown pomp number or threshold of moisture");
+        return;
+      }
+
+      Serial.print("pompPin: ");
+      Serial.println(pompPin);
+
+      if (pompPin != -1) {
+        if (messageTemp == "on") {
+          Serial.println("on");
+          analogWrite(pompPin, MAX_PWM_SPEED);
+        }
+        else if (messageTemp == "off") {
+          Serial.println("off");
+          analogWrite(pompPin, MIN_PWM_SPEED);
+        }
+      }
+    } 
+    // devices/(moisture_device_1 || moisture_device_2)/moisture
+    else if (secondTopicElement.startsWith("moisture_device")) {
+      int moistureIndex = -1;
+
+      if (secondTopicElement == "moisture_device_1") {
+        moistureIndex = 0;
+      } else if (secondTopicElement == "moisture_device_2") {
+        moistureIndex = 1;
+      }
+
       String thirdTopicElement = getElementOfTopic(topicStr, 2);
-
-      Serial.print("3rd: ");
+      Serial.println("3rd:");
       Serial.println(thirdTopicElement);
 
-      // returns 0 if no valid conversion could be performed
-      int deviceNumber = thirdTopicElement.toInt();
-
-      if (deviceNumber > 0 && deviceNumber <= 2) {
-        moistureThresholdIndex = deviceNumber - 1;
+      if (thirdTopicElement == "moisture") {
+        moisture[moistureIndex] = messageTemp.toInt();
       } else {
-        Serial.println("Unknown threshold of moisture indenfier");
+        Serial.println("Unknown measurement");
         return;
       }
 
-      /*
-         threshold could be set to 0,
-         toInt() would return 0 also when string doesn't start with '0', eg. 'a'
-         so additional checking and setting to -1
-      */
-      int threshold = messageTemp.toInt();
-      Serial.println("threshold: ");
-      Serial.println(threshold);
-      if (!threshold && messageTemp[0] != '0') {
-        threshold = -1;
-      }
-
-      Serial.println("threshold: ");
-      Serial.println(threshold);
-
-      if (threshold >= 0) {
-        moistureThreshold[moistureThresholdIndex] = threshold;
-      } else {
-        Serial.println("Not valid value");
-        return;
-      }
-
-      Serial.println("moisture th: ");
-      Serial.println(moistureThreshold[0]);
-      Serial.println(moistureThreshold[1]);
+      Serial.println("moisture: ");
+      Serial.println(moisture[0]);
+      Serial.println(moisture[1]);
     }
-
-    else {
-      Serial.println("Unknown pomp number or threshold of moisture");
-      return;
-    }
-
-    Serial.print("pompPin: ");
-    Serial.println(pompPin);
-
-    if (pompPin != -1) {
-      if (messageTemp == "on") {
-        Serial.println("on");
-        analogWrite(pompPin, MAX_PWM_SPEED);
-      }
-      else if (messageTemp == "off") {
-        Serial.println("off");
-        analogWrite(pompPin, MIN_PWM_SPEED);
-      }
-    }
-  } else if (firstTopicElement == "moisture_devices") {
-    int moistureIndex = -1;
-
-    // returns 0 if no valid conversion could be performed
-    int deviceNumber = secondTopicElement.toInt();
-
-    if (deviceNumber > 0 && deviceNumber <= 2) {
-      moistureIndex = deviceNumber - 1;
-    } else {
-      Serial.println("Unknown device number");
-      return;
-    }
-
-    String thirdTopicElement = getElementOfTopic(topicStr, 2);
-    Serial.println("3rd:");
-    Serial.println(thirdTopicElement);
-
-    if (thirdTopicElement == "moisture") {
-      moisture[moistureIndex] = messageTemp.toInt();
-    } else {
-      Serial.println("Unknown measurement");
-      return;
-    }
-
-    Serial.println("moisture: ");
-    Serial.println(moisture[0]);
-    Serial.println(moisture[1]);
   }
+
+
 }
 
 String getFirstElementOfTopic(String topic) {
@@ -214,8 +218,7 @@ void reconnect() {
     if (client.connect("pompsDevice")) {
       Serial.println("connected");
       // Subscribe
-      client.subscribe("pomps_device/#");
-      client.subscribe("moisture_devices/#");
+      client.subscribe("devices/#");
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -264,20 +267,20 @@ void loop() {
   client.loop();
 
   long now = millis();
-    if (now - lastMsg > 10000) {
-      lastMsg = now;
-  
-      liquidLevel = digitalRead(liquidSensorPin);
-      Serial.print("liquidLevel: ");
-      Serial.println(liquidLevel);
-  
-      char tempString[8];
-      Serial.print("tempString char: ");
-      Serial.println(tempString);
-      dtostrf(liquidLevel, 1, 0, tempString);
-      Serial.print("Message: ");
-      Serial.println(tempString);
-      client.publish("pomps_device/liquid_level", tempString);
-    }
+  if (now - lastMsg > 10000) {
+    lastMsg = now;
+
+    liquidLevel = digitalRead(liquidSensorPin);
+    Serial.print("liquidLevel: ");
+    Serial.println(liquidLevel);
+
+    char tempString[8];
+    Serial.print("tempString char: ");
+    Serial.println(tempString);
+    dtostrf(liquidLevel, 1, 0, tempString);
+    Serial.print("Message: ");
+    Serial.println(tempString);
+    client.publish("devices/pomps_device/liquid_level", tempString);
+  }
 
 }

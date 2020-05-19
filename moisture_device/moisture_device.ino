@@ -5,7 +5,7 @@ const char* ssid = "***";
 const char* password = "***";
 
 const char* mqtt_server = "***";
-const int mqtt_port = ***;
+const int mqtt_port = 1;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -16,7 +16,7 @@ int value = 0;
 int sensorPin = A0;
 int output;
 
-const char* topic = "moisture_devices/1/moisture";
+const char* topic = "devices/moisture_device_1/moisture";
 
 void setup_wifi() {
   delay(10);
@@ -43,10 +43,6 @@ void setup() {
 
   setup_wifi();
   client.setServer(mqtt_server, mqtt_port);
-  //  client.setCallback(callback);
-
-
-//  pinMode(sensorPin, INPUT);
 }
 
 void reconnect() {
