@@ -29,8 +29,8 @@ const byte MIN_PWM_SPEED = 0;
 bool liquidLevel = false;
 int liquidSensorPin = 16;
 
-int moisture[2] ;
-int moistureThreshold[2] = {0, 0};
+int moisture[2];
+int moistureThreshold[2] = { -1, -1};
 
 void setup_wifi() {
   delay(10);
@@ -146,7 +146,7 @@ void callback(char* topic, byte* message, unsigned int length) {
           analogWrite(pompPin, MIN_PWM_SPEED);
         }
       }
-    } 
+    }
     // devices/(moisture_device_1 || moisture_device_2)/moisture
     else if (secondTopicElement.startsWith("moisture_device")) {
       int moistureIndex = -1;
@@ -229,6 +229,25 @@ void reconnect() {
   }
 }
 
+void automaticWatering() {
+  if (moistureThreshold[0] > 0) {
+    automaticWateringBy(ena, 0);
+  }
+  if (moistureThreshold[1] > 0) {
+    automaticWateringBy(enb, 0);
+  }
+}
+
+void automaticWateringBy(int pompPin, int moistureIndex) {
+  if (moisture[moistureIndex] > moistureThreshold[moistureIndex]) {
+    Serial.println("on");
+    analogWrite(pompPin, MAX_PWM_SPEED);
+  } else {
+    Serial.println("off");
+    analogWrite(pompPin, MIN_PWM_SPEED);
+  }
+}
+
 void setup() {
   Serial.begin(115200);
   Serial.println("Start");
@@ -258,8 +277,7 @@ void setup() {
 }
 
 void loop() {
-  Serial.println("loop()");
-  delay(500);
+  delay(5000);
 
   if (!client.connected()) {
     reconnect();
@@ -267,7 +285,7 @@ void loop() {
   client.loop();
 
   long now = millis();
-  if (now - lastMsg > 10000) {
+  if (now - lastMsg > 60000) {
     lastMsg = now;
 
     liquidLevel = digitalRead(liquidSensorPin);
@@ -282,5 +300,7 @@ void loop() {
     Serial.println(tempString);
     client.publish("devices/pomps_device/liquid_level", tempString);
   }
+
+  automaticWatering();
 
 }

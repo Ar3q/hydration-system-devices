@@ -63,8 +63,7 @@ void reconnect() {
 }
 
 void loop() {
-  Serial.println("loop()");
-  delay(1000);
+  delay(5000);
 
   if (!client.connected()) {
     reconnect();
@@ -72,7 +71,7 @@ void loop() {
   client.loop();
 
   long now = millis();
-  if (now - lastMsg > 2000) {
+  if (now - lastMsg > 60000) {
     lastMsg = now;
 
     output = analogRead(sensorPin);
