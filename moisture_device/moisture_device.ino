@@ -4,8 +4,8 @@
 const char* ssid = "***";
 const char* password = "***";
 
-const char* mqtt_server = "***";
-const int mqtt_port = 1;
+const char* mqtt_server = "***.***.***.***";
+const int mqtt_port = 0;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -17,6 +17,7 @@ int sensorPin = A0;
 int output;
 
 const char* topic = "devices/moisture_device_1/moisture";
+//const char* topic = "devices/moisture_device_2/moisture";
 
 void setup_wifi() {
   delay(10);
@@ -50,7 +51,8 @@ void reconnect() {
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
-    if (client.connect("moisture_devices_1")) {
+    if (client.connect("moisture_device_1")) {
+//    if (client.connect("moisture_device_2")) {
       Serial.println("connected");
     } else {
       Serial.print("failed, rc=");
@@ -79,11 +81,7 @@ void loop() {
     Serial.print(output);
 
     char tempString[8];
-    Serial.print("tempString char: ");
-    Serial.println(tempString);
     dtostrf(output, 1, 0, tempString);
-    Serial.print("Message: ");
-    Serial.println(tempString);
     
     client.publish(topic, tempString);
   }

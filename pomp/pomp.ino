@@ -6,8 +6,8 @@
 const char* ssid = "***";
 const char* password = "***";
 
-const char* mqtt_server = "xxx.xxx.xxx.xxx";
-const int mqtt_port = 1;
+const char* mqtt_server = "***.***.***.***";
+const int mqtt_port = 0;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -126,6 +126,11 @@ void callback(char* topic, byte* message, unsigned int length) {
         Serial.println("moisture th: ");
         Serial.println(moistureThreshold[0]);
         Serial.println(moistureThreshold[1]);
+      }
+      
+      // devices/pomps_device/liquid_level
+      else if(thirdTopicElement == "liquid_level"){
+        return;
       }
 
       else {
@@ -293,14 +298,9 @@ void loop() {
     Serial.println(liquidLevel);
 
     char tempString[8];
-    Serial.print("tempString char: ");
-    Serial.println(tempString);
     dtostrf(liquidLevel, 1, 0, tempString);
-    Serial.print("Message: ");
-    Serial.println(tempString);
     client.publish("devices/pomps_device/liquid_level", tempString);
   }
 
   automaticWatering();
-
 }
